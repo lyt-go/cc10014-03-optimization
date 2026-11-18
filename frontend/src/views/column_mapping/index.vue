@@ -6,6 +6,7 @@
         <p class="page-desc">维护字段映射规则的输入、执行约束与结果记录，为字段映射提供可验证的数据工程流程。</p>
       </div>
       <div class="page-actions">
+        <RouterLink class="btn" data-testid="goto-version" to="/column_mapping_version">查看字段映射版本表</RouterLink>
         <button class="btn primary" data-testid="open-create" type="button" @click="openCreate">登记映射规则</button>
         <button class="btn" data-testid="export" type="button" @click="exportRows">导出字段映射清单</button>
       </div>

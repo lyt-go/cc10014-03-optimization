@@ -257,3 +257,42 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
          "保留天数": "365", "恢复超时": "3600"},
     ],
 }
+
+
+def _build_mapping_version_seed() -> list[dict[str, Any]]:
+    """从字段映射种子派生版本表：逐字段拆行，保留源字段、目标字段与生效状态。
+
+    种子里的映射规则已是「已生效」，版本行直接落到已生效，保证查询映射后
+    只出现一份当前生效版本；新增规则的版本行由服务层解析生成。
+    """
+    versions: list[dict[str, Any]] = []
+    seq = 0
+    vid = 0
+    for rule in SEED_ROWS["column_mapping"]:
+        src_fields = [item.strip() for item in str(rule.get("源字段名", "")).split(",")]
+        tgt_fields = [item.strip() for item in str(rule.get("目标字段名", "")).split(",")]
+        dtypes = [item.strip() for item in str(rule.get("数据类型", "")).split(",")]
+        for index, (src, tgt) in enumerate(zip(src_fields, tgt_fields)):
+            seq += 1
+            vid += 1
+            dtype = dtypes[index] if index < len(dtypes) else ""
+            versions.append({
+                "id": vid,
+                "版本编号": f"MV-{seq:04d}",
+                "规则编号": rule.get("规则编号", ""),
+                "源字段": src,
+                "目标字段": tgt,
+                "数据类型": dtype,
+                "登记顺序": seq,
+                "生效日期": rule.get("生效日期", ""),
+                "来源批次": rule.get("来源批次", ""),
+                "status": "已生效",
+                "pending": False,
+                "abnormal": False,
+                "冲突标记": False,
+                "冲突说明": "",
+            })
+    return versions
+
+
+SEED_ROWS["column_mapping_version"] = _build_mapping_version_seed()

@@ -108,11 +108,34 @@ class DwdLayerService:
         dwd_table = entry.get("表名称", "")
         store.set_table_rows(dwd_table, ods_data)
         entry["刷新水位"] = date.today().isoformat()
+        # 明细刷新原因沿数据流回溯到字段映射规则编号，与字段映射版本表的刷新标记呼应
+        rule_nos = self._trace_mapping_rules(entry)
+        entry["刷新原因"] = "；".join(
+            f"规则 {rule_no} 生效触发刷新" for rule_no in rule_nos
+        ) or "手工构建刷新"
         store.save_version(MODULE, entry_id, entry)
         # 注册血缘
         store.add_lineage(ods_table, dwd_table, ods_entry.get("字段列表", ""),
                           transform_logic="清洗+去重", batch_id=entry.get("创建批次", ""))
-        return {"ok": True, "message": f"DWD表 {dwd_table} 已生成，共{len(ods_data)}行"}
+        return {"ok": True, "message": f"DWD表 {dwd_table} 已生成，共{len(ods_data)}行",
+                "刷新原因": entry["刷新原因"], "关联映射规则": rule_nos}
+
+    def _trace_mapping_rules(self, entry: dict[str, Any]) -> list[str]:
+        """沿数据流定位：DWD 父层 ODS 的创建批次 → 同批次字段映射规则编号。"""
+        parent = str(entry.get("父层来源", ""))
+        batch_no = ""
+        for ods in store.rows("ods_layer"):
+            if parent in (str(ods.get("表编号", "")), str(ods.get("表名称", ""))):
+                batch_no = str(ods.get("创建批次", ""))
+                break
+        if not batch_no:
+            batch_no = str(entry.get("创建批次", ""))
+        rule_nos = [
+            str(row.get("规则编号", ""))
+            for row in store.rows("column_mapping")
+            if row.get("来源批次") == batch_no and row.get("规则编号")
+        ]
+        return rule_nos
 
     def _resolve_id(self, module: str, code: str) -> int:
         for row in store.rows(module):

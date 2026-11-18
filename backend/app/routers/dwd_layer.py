@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from app.schemas import ActionPayload, ActionResult, EntryPayload, PageResult
 from app.services.dwd_layer import DwdLayerService
+from app.store import store
 
 router = APIRouter(prefix="/api/dwd_layer", tags=["明细层管理"])
 
@@ -107,3 +108,10 @@ def get_table_data(entry_id: int) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"明细表 {entry_id} 不存在")
     data = service.get_table_data(entry.get("表名称", ""))
     return {"items": data}
+
+
+@router.get("/refresh_marks/list")
+def list_refresh_marks(rule_no: str | None = None, table_name: str | None = None) -> dict[str, Any]:
+    """明细刷新标记列表：刷新原因能定位到对应字段映射规则编号。"""
+    marks = store.get_refresh_marks(rule_no=rule_no, table_name=table_name)
+    return {"items": marks, "total": len(marks)}

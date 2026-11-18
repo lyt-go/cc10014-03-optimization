@@ -29,6 +29,10 @@ class Store:
         self._archive_records: list[dict[str, Any]] = []
         # 补数区间记录
         self._backfill_partitions: dict[str, list[dict[str, Any]]] = {}
+        # 字段映射版本表：解析映射规则后生成，保留源字段、目标字段与生效状态
+        self._tables.setdefault("column_mapping_version", [])
+        # DWD 明细刷新标记：与映射生效原子落库，刷新原因定位到规则编号
+        self._dwd_refresh_marks: list[dict[str, Any]] = []
 
     def module_names(self) -> list[str]:
         return sorted(self._tables)
@@ -165,6 +169,31 @@ class Store:
 
     def get_backfill_partitions(self, job_id: str) -> list[dict[str, Any]]:
         return list(self._backfill_partitions.get(job_id, []))
+
+    # ---- DWD 明细刷新标记（与字段映射版本生效原子落库） ----
+
+    def add_refresh_mark(self, mark: dict[str, Any]) -> dict[str, Any]:
+        mark = dict(mark)
+        mark["id"] = max((int(item.get("id", 0)) for item in self._dwd_refresh_marks), default=0) + 1
+        self._dwd_refresh_marks.append(mark)
+        return mark
+
+    def get_refresh_marks(self, *, table_name: str | None = None,
+                          rule_no: str | None = None) -> list[dict[str, Any]]:
+        marks = list(self._dwd_refresh_marks)
+        if table_name:
+            marks = [mark for mark in marks if mark.get("明细表名称") == table_name]
+        if rule_no:
+            marks = [mark for mark in marks if mark.get("规则编号") == rule_no]
+        return marks
+
+    def rollback_refresh_marks(self, mark_ids: list[int]) -> None:
+        """原子落库失败时，按本次生成的标记 id 回滚，保证版本状态与下游刷新不脱节。"""
+        if not mark_ids:
+            return
+        self._dwd_refresh_marks = [
+            mark for mark in self._dwd_refresh_marks if int(mark.get("id", 0)) not in mark_ids
+        ]
 
 
 store = Store()

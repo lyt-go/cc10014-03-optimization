@@ -51,6 +51,18 @@ class ColumnMappingService:
         if values.get("来源批次"):
             entry["来源批次"] = values["来源批次"]
         rows.append(entry)
+        # 解析源字段映射规则并生成字段映射版本表，替代旧的重复全表扫描校验。
+        # 非法值按功能优化失败处理：规则保留登记，但标记异常并记录失败原因，不产生半截版本。
+        from app.services.column_mapping_version import (
+            ColumnMappingVersionService,
+            MappingVersionError,
+        )
+        try:
+            ColumnMappingVersionService().parse_and_register(entry)
+            entry["版本解析状态"] = "已解析"
+        except MappingVersionError as exc:
+            entry["abnormal"] = True
+            entry["版本解析状态"] = f"解析失败：{exc}"
         return entry, []
 
     def run_action(self, entry_id: int, action: str) -> tuple[dict[str, Any] | None, str]:

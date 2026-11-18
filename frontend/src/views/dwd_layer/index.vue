@@ -6,6 +6,7 @@
         <p class="page-desc">维护明细层DWD表的输入、执行约束与结果记录，为明细层管理提供可验证的数据工程流程。</p>
       </div>
       <div class="page-actions">
+        <RouterLink class="btn" data-testid="goto-refresh-marks" to="/column_mapping_version">查看映射刷新标记</RouterLink>
         <button class="btn primary" data-testid="open-create" type="button" @click="openCreate">登记明细表</button>
         <button class="btn" data-testid="export" type="button" @click="exportRows">导出明细层管理清单</button>
       </div>

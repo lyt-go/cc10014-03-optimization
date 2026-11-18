@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Overview from '@/views/Overview.vue'
 const RawIngest = () => import('@/views/raw_ingest/index.vue')
 const ColumnMapping = () => import('@/views/column_mapping/index.vue')
+const ColumnMappingVersion = () => import('@/views/column_mapping_version/index.vue')
 const CleanseRule = () => import('@/views/cleanse_rule/index.vue')
 const DedupConfig = () => import('@/views/dedup_config/index.vue')
 const OdsLayer = () => import('@/views/ods_layer/index.vue')
@@ -26,6 +27,7 @@ const router = createRouter({
     { path: '/', name: 'overview', component: Overview },
     { path: '/raw_ingest', name: 'raw_ingest', component: RawIngest },
     { path: '/column_mapping', name: 'column_mapping', component: ColumnMapping },
+    { path: '/column_mapping_version', name: 'column_mapping_version', component: ColumnMappingVersion },
     { path: '/cleanse_rule', name: 'cleanse_rule', component: CleanseRule },
     { path: '/dedup_config', name: 'dedup_config', component: DedupConfig },
     { path: '/ods_layer', name: 'ods_layer', component: OdsLayer },
